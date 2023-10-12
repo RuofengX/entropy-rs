@@ -1,10 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::cmp::{Eq, PartialEq};
 use std::ops::{Add, Div, Mul, Sub};
-
-/// 识别符ID
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct ID(u64);
 
 /// 三维向量
 #[derive(Clone, Copy, Serialize, Deserialize)]
@@ -81,10 +76,7 @@ impl Vector3 {
         *self / self.get_length()
     }
     /// 零长度向量
-    pub fn zero() -> Vector3{
-        Vector3([0f64;3])
+    pub fn zero() -> Vector3 {
+        Vector3([0f64; 3])
     }
 }
-
-/// 序列化后的实体
-pub struct EntityCode(String);
