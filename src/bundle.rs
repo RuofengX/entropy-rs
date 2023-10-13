@@ -1,6 +1,13 @@
+use std::{borrow::BorrowMut, collections::HashMap, thread::AccessError};
+
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
-use crate::{components::NewtonComponent, entity::{Entity, self}, scaler::{grid::Grid, Vector3}, system::World};
+use crate::{
+    components::NewtonComponent,
+    entity::{self, Entity},
+    scaler::{grid::Grid, Vector3, ID},
+    system::World,
+};
 
 /// Bundle虚拟组件
 /// 一个虚组件对应了一组实体组件
@@ -15,7 +22,7 @@ pub trait Bundle: Serialize + DeserializeOwned {
     /// 额外的行为
     /// 每次tick对全部实体顺序运行一次
     /// 包含了无法并行处理的情形
-    fn sync_tick(s: &World) -> Result<(), ()> {
+    fn sync_tick(s: &mut World) -> Result<(), ()> {
         Ok(())
     }
 
@@ -31,52 +38,69 @@ pub struct CrashBundle {
     react_distance: f64,
 }
 impl CrashBundle {
-    fn new() -> CrashBundle {
+    pub fn new() -> CrashBundle {
         CrashBundle {
             react_distance: 0.1f64,
         }
     }
-    /// 根据距离修改力量
-    fn force_by_distance(distance: f64, force: &mut Vector3){ 
-        let x: f64 = 0.1;
-        todo!("TODO: 根据粒子间的距离算出对应算子x")
-        *force = *force * x;
-    }
 
-    fn sync_tick(ent: &mut Entity, w: &World, g: &Grid) -> Result<(), ()> {
-        if let (Some(crash), Some(newton)) = (&ent.crash, &ent.newton_physics) {
-            let nearby_id = Grid::nearby_id(g, newton, crash.react_distance);
-            nearby_id.into_iter().filter(
-                // 返回在碰撞范围内的实体
-                |id| -> bool{
-                    let other_p = w.entities.get(id).ok_or(())?.newton_physics.ok_or(())?.pos; // 如果不存在目标物体则直接跑飞TODO: 添加错误类型，上级根据类型选择性删除该Bundle
-                    if (other_p - newton.pos).get_length() < crash.react_distance{
-                        true
-                    } else{
-                        false
-                    }
-
-                }
-            ).for_each(
+    pub fn tick_for_each(
+        ent: &mut Entity,
+        w: &mut World,
+        g: &Grid,
+    ) -> Result<HashMap<ID, Vector3>, ()> {
+        if let (Some(self_crash), Some(self_newton)) = (&ent.crash, &ent.newton_physics) {
+            let nearby_id = Grid::nearby_id(g, self_newton, self_crash.react_distance);
+            nearby_id.into_iter().filter_map(
                 // 对每个在范围内的实体进行操作
-                |id|{
-                    let (_, mut target) = w.entities.get_key_value(&id).ok_or(())?;
-                    target.newton_physics.ok_or(())?.force += SOME_FORCE todo!()
-                }
-            )
-            
+                |id| -> Option<(ID, Vector3)>{
+                    let other_newton = w
+                        .entities
+                        .get_mut(&id)
+                        .unwrap()
+                        .newton_physics
+                        .as_mut()
+                        .unwrap();
+                    // 如果不存在目标物体则直接跑飞TODO: 添加错误类型，上级根据类型选择性删除该Bundle
+
+                    let distance = other_newton.pos - self_newton.pos; // 距离向量，从自身指向目标
+                    let delta = (distance.get_length() - self_crash.react_distance)
+                        / self_crash.react_distance; // 距离和影响距离的倍率
+                    if 0.0 < delta {
+                        // 距离大于影响距离，不影响
+                        return None;
+                    }
+                    if -0.1 <= delta && delta < 0.0 {
+                        // 距离小于影响距离，但仍然大于0.1倍影响距离，体现为随delta减小而减小的引力
+                        todo!()
+                        return Some((id, FORCE))
+                    }
+                    if -1.0 <= delta && delta < -0.1 {
+                        // 距离小于影响距离的0.1，体现为逐渐增至无穷大的斥力
+                        todo!()
+                        return Some((id, FORCE))
+                    }
+                },
+            );
+
             return Ok(());
         }
         return Err(());
     }
 }
+
 impl Bundle for CrashBundle {
     fn thread_tick(&mut self) -> Result<(), ()> {
         // 碰撞体积检查只能同步(自定义异步)检查
         Ok(())
     }
 
-    fn sync_tick(s: &World) -> Result<(), ()> {
+    fn sync_tick(w: &mut World) -> Result<(), ()> {
+        let mut modify_list: HashMap<ID, Vector3> = HashMap::new(); // 修改列表
+        for (_, ent) in w.entities.iter_mut() {
+            CrashBundle::tick_for_each(ent, w, &w.grid);
+        }
+
         Ok(())
     }
 
