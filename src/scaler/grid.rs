@@ -44,7 +44,7 @@ impl Grid {
         (r / Grid::unit()).floor() as i64 + 1
     }
     /// 获取临近r范围内的所有Chunk，包含r所在的Chunk在内
-    pub fn nearby_r(&self, target: Chunk3, r: f64) -> Vec<Chunk3> {
+    pub fn nearby_chunk(&self, target: Chunk3, r: f64) -> Vec<Chunk3> {
         let u = Grid::divide_unit_ceil(r); // 向外辐射多少区块
         let mut rtn: Vec<Chunk3> = Vec::new();
 
@@ -62,12 +62,21 @@ impl Grid {
         rtn
     }
     /// 获取chunk中的ID
-    pub fn get_ids(&self, chunks: Vec<Chunk3>) -> Vec<ID> {
+    pub fn id_in_chunk(&self, chunks: Vec<Chunk3>) -> Vec<ID> {
         chunks
             .iter()
             .map(|c| self.0.get_key_value(c).unwrap().1.clone())
             .flatten()
             .collect()
+    }
+
+    /// 获取周边的IDs
+    pub fn nearby_id(
+        grid: &Grid,
+        target: &NewtonComponent,
+        radius: f64,
+    ) -> Vec<ID> {
+        grid.id_in_chunk(grid.nearby_chunk(target.chunk, radius))
     }
 }
 
@@ -127,14 +136,4 @@ impl Chunk3 {
     pub fn z(&self) -> i64 {
         self.0[2]
     }
-}
-
-/// 获取周边IDs
-pub fn get_nearby(
-    ent: NewtonComponent,
-    radius: f64,
-    list: &Vec<NewtonComponent>,
-    grid: &Grid,
-) -> Vec<ID> {
-    grid.get_ids(grid.nearby_r(ent.chunk, radius))
 }

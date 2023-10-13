@@ -1,21 +1,33 @@
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
-use crate::scaler::{Chunk3, EntityCode, Vector3};
+use crate::{
+    entity::Entity,
+    scaler::{Chunk3, EntityCode, Vector3},
+};
 
-trait Component: DeserializeOwned + Serialize {
-    fn tick(&mut self);
+pub trait Component: DeserializeOwned + Serialize {
+    /// 对每个实体进行更新
+    /// 默认行为
+    /// 将自动对每个component并行迭代
+    fn thread_tick(&mut self) -> ();
+
+    /// 对所有Component顺序更新
+    /// 额外的行为
+    /// 每次tick对全部实体顺序运行一次
+    /// 包含了无法并行处理的情形
+    fn sync_tick(_entities: Vec<&mut Entity>) -> () {}
 }
 
 /// 可被侦测到的，使用bson编解码
 #[derive(Serialize, Deserialize)]
 pub struct DetectableComponent {}
 impl DetectableComponent {
-    fn code(&self) -> EntityCode {
+    pub fn code(&self) -> EntityCode {
         EntityCode(bson::to_document(self).unwrap())
     }
 }
 impl Component for DetectableComponent {
-    fn tick(&mut self) {}
+    fn thread_tick(&mut self) {}
 }
 
 /// 经典力学的
@@ -28,7 +40,7 @@ pub struct NewtonComponent {
     pub force: Vector3,
 }
 impl Component for NewtonComponent {
-    fn tick(&mut self) -> () {
+    fn thread_tick(&mut self) -> () {
         // 位置tick
         let pos = self.pos;
         let velo = self.velo;
@@ -56,7 +68,7 @@ pub struct RadarComponent {
     pub around: Vec<EntityCode>,
 }
 impl Component for RadarComponent {
-    fn tick(&mut self) {
+    fn thread_tick(&mut self) {
         self.since_last_update += 1;
         if self.since_last_update >= self.interval {
             todo!("添加扫描附近的代码，可能需要跨组件执行")
