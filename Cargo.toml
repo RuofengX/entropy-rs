@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 bson = "2.7.0"
-retable = "0.4.3"
+retable = "0.6.1"
 rustc-hash = "1.1.0"
 serde = { version = "1.0", features = ["derive"] }
