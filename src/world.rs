@@ -11,12 +11,14 @@
 //! When the first entity is created, the second entity does not exist. So it cannot be called a 'World'.
 //! So if the author of this framework(RuofengX) created half of the world, another half is your(Lib User) responsibility.
 //!
-use std::sync::{atomic::AtomicBool, Arc};
+use std::{sync::Arc, cell::OnceCell};
 
 use config::{Config, File, FileFormat};
 
 use retable::{api::PropStorage, basic::PropTag, Database};
 use rustc_hash::FxHashMap;
+
+use crate::wheel::{Wheel, WHEELS};
 
 /// A hash map of the props of the world.
 ///
@@ -24,48 +26,52 @@ use rustc_hash::FxHashMap;
 ///
 pub type Systems = FxHashMap<PropTag, Arc<dyn PropStorage>>;
 
-/// A function that runs forever when the world is running.
-///
-/// The wheel function is run right before the world starts to tick.
-/// Nothing stop the wheel from running forever, unless the world is shutting down, in which case
-///
-/// # Arguments
-/// - `s`: Reference to the systems.
-/// - `stop`: A flag to stop the wheel. Should been checked frequently.
-///
-/// # Return
-/// - `()`: Run forever until the stop flag is set to true.
-///
-/// # Usage
-///
-/// * Run an non-stop GraphQL API along with the world.
-/// * Receieve and send messages from a zmq ipc socket.
-///
-pub type Wheel = fn(s: &Systems, stop: &AtomicBool) -> ();
+/// The static meta info of one world.
+/// 
+/// Meta is protected by a OnceCell right after world created.
+/// 
+/// # Properties
+/// - `config`: The World config items, using crate `config::Config`.
+/// - `db`: The database of the world.
+/// - `wheels`: The functions that run forever when the world is running, just like daemon thread. See more in [`crate::wheel::Wheel`].
+struct WorldMeta{
+    pub config: Config,
+    pub db: Database,
+    pub wheels: Vec<Wheel>,
+}
 
 /// World container.
 ///
 /// # Private Field
-/// - `db`: The database of the world. Maintained by [`retable::db::Database`]
 /// - `systems`: A hash map of the props of the world. Each props is created by [`retable::api::AtomStorage::create_prop`] and stored as [`std::sync::Arc`] in this hash map.
-/// - `wheels`: The functions that run forever when the world is running, just like daemon thread. See more in [`Wheel`]
 ///
 pub struct World {
-    config: Config,
-    db: Database,
-    wheels: Vec<Wheel>,
+    meta: OnceCell<WorldMeta>,
+    systems: Systems,
 }
+
 impl World {
     pub fn new() -> Result<Self, Error> {
-        let config = World::read_config().unwrap();
-        Ok(World {
-            config: config.clone(),
+        // read config
+        let config = World::read_config()?;
+
+        // build meta
+        let meta = WorldMeta{
+            config:   config.clone(),
             db: Database::new(
                 retable::Config::new()
                     .path(config.get_string("database.sled.path")?)
                     .temporary(config.get_bool("database.sled.temporary")?),
             )?,
-            wheels: vec![],
+            wheels: WHEELS,
+        };
+        // TODO: Get systems from the database.
+
+        // start the wheels.
+
+        Ok(World {
+            meta: OnceCell::from(meta), // freeze the meta.
+            systems: Systems::default(),
         })
     }
     pub fn read_config() -> Result<Config, Error> {
