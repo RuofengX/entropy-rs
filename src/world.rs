@@ -46,14 +46,13 @@ pub type Wheel = fn(s: &Systems, stop: &AtomicBool) -> ();
 /// World container.
 ///
 /// # Private Field
-/// - `db`: The database of the world.
+/// - `db`: The database of the world. Maintained by [`retable::db::Database`]
 /// - `systems`: A hash map of the props of the world. Each props is created by [`retable::api::AtomStorage::create_prop`] and stored as [`std::sync::Arc`] in this hash map.
 /// - `wheels`: The functions that run forever when the world is running, just like daemon thread. See more in [`Wheel`]
 ///
 pub struct World {
     config: Config,
     db: Database,
-    systems: Systems,
     wheels: Vec<Wheel>,
 }
 impl World {
@@ -66,7 +65,6 @@ impl World {
                     .path(config.get_string("database.sled.path")?)
                     .temporary(config.get_bool("database.sled.temporary")?),
             )?,
-            systems: Systems::default(),
             wheels: vec![],
         })
     }
