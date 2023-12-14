@@ -1,0 +1,18 @@
+entropy_version = [0, 1, 1]
+
+[meta]
+name = "world"
+codename = "oasis"
+version = [0, 0, 1]
+[meta.maintainer]
+user = "RuofengX"
+org = ""
+email = "i@ruofengx.cn"
+repo = "https://github.com/ruofengx/entropy-rs"
+
+[database]
+type = 'sled'
+[database.sled]
+path = "./entropy_db/sled"
+temporary = false
+save_interval = 1000

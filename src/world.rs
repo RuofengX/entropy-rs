@@ -13,6 +13,8 @@
 //!
 use std::sync::{atomic::AtomicBool, Arc};
 
+use config::{Config, File, FileFormat};
+
 use retable::{api::PropStorage, basic::PropTag, Database};
 use rustc_hash::FxHashMap;
 
@@ -49,7 +51,39 @@ pub type Wheel = fn(s: &Systems, stop: &AtomicBool) -> ();
 /// - `wheels`: The functions that run forever when the world is running, just like daemon thread. See more in [`Wheel`]
 ///
 pub struct World {
+    config: Config,
     db: Database,
     systems: Systems,
     wheels: Vec<Wheel>,
+}
+impl World {
+    pub fn new() -> Result<Self, Error> {
+        let config = World::read_config().unwrap();
+        Ok(World {
+            config: config.clone(),
+            db: Database::new(
+                retable::Config::new()
+                    .path(config.get_string("database.sled.path")?)
+                    .temporary(config.get_bool("database.sled.temporary")?),
+            )?,
+            systems: Systems::default(),
+            wheels: vec![],
+        })
+    }
+    pub fn read_config() -> Result<Config, Error> {
+        let builder = Config::builder()
+            .set_default("database.type", "sled")?
+            .set_default("database.sled.temporary", true)?
+            .add_source(File::new("config.toml", FileFormat::Toml).required(false));
+
+        builder.build().map_err(Error::from)
+    }
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error(transparent)]
+    ConfigError(#[from] config::ConfigError),
+    #[error(transparent)]
+    DatabaseError(#[from] retable::error::Error),
 }
