@@ -25,7 +25,7 @@ use crate::wheel::Wheels;
 
 /// A hash map of the props of the world.
 ///
-/// Each props is created by [`retable::api::AtomStorage::create_prop`] and stored as [`std::sync::Arc`] in this hash map.
+/// Each props is created by [`retable::db::Database::create_prop`] and stored as [`std::sync::Arc`] in this hash map.
 ///
 pub type Systems = FxHashMap<PropTag, Arc<Prop>>;
 
@@ -39,7 +39,7 @@ pub type AbortFlag = Arc<AtomicBool>;
 /// # Properties
 /// - `config`: The World config items, using crate `config::Config`.
 /// - `db`: The database of the world.
-/// - `wheels`: The functions that run forever when the world is running, just like daemon thread. See more in [`crate::wheel::Wheel`].
+/// - `wheels`: The functions that run forever when the world is running, just like daemon thread. See more in [`crate::wheel::Wheels`].
 struct WorldMeta {
     pub config: Config,
     pub db: Database,
