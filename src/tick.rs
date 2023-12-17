@@ -1,8 +1,11 @@
-use retable::{method::TickFn, basic::{Value, EID}, api::PropStorage};
-
+use retable::{
+    basic::{Value, EID},
+    method::TickFn,
+    Prop,
+};
 
 /// The method that record the number of times the world has been ticked.
-const WORLD_META: TickFn = |_, old, prop: &dyn PropStorage| -> Option<Value> {
+const WORLD_META: &'static dyn TickFn = &|_, old, prop: &Prop| -> Option<Value> {
     const INIT: bool = false;
     if !INIT {
         prop.set(&EID::new(1), Value::Int(0), false);
