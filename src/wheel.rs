@@ -54,7 +54,7 @@ const LOOP: &dyn Wheel = &|_s: &Systems, _stop: AbortFlag| {
 ///
 /// include prime move and wheels that run forever.
 pub struct Wheels {
-    start: Vec<Rc<dyn Prime>>,
+    start: Vec<Box<dyn Prime>>,
     forever: Vec<Box<dyn Wheel>>,
 }
 
@@ -66,14 +66,14 @@ impl Wheels {
         }
     }
     pub fn add_prime_move(&mut self, prime: impl Prime) {
-        self.start.push(Rc::new(prime))
+        self.start.push(Box::new(prime))
     }
     pub fn add_forever(&mut self, wheel: impl Wheel) {
         self.forever.push(Box::new(wheel))
     }
 
     pub fn prime_move(&mut self, s: &mut Systems) {
-        self.start.iter().for_each(|x| (x.clone())(s));
+        self.start.iter().for_each(|x| (x)(s));
     }
 
     pub fn run_forever(&mut self, s: &Systems, stop: AbortFlag) {

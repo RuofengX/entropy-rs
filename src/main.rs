@@ -6,6 +6,7 @@ pub mod merge;
 pub mod tick;
 pub mod wheel;
 pub mod world;
+pub mod system;
 
 fn main() {
     println!("Hello, world!");

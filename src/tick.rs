@@ -5,7 +5,7 @@ use retable::{
 };
 
 /// The method that record the number of times the world has been ticked.
-const WORLD_META: &'static dyn TickFn = &|_, old, prop: &Prop| -> Option<Value> {
+const META_SYSTEM: &'static dyn TickFn = &|_, old, prop: &Prop| -> Option<Value> {
     const INIT: bool = false;
     if !INIT {
         prop.set(&EID::new(1), Value::Int(0), false);
