@@ -269,6 +269,7 @@ dependencies = [
  "config",
  "enum_dispatch",
  "parking_lot 0.12.1",
+ "rayon",
  "rustc-hash",
  "serde",
  "sled",

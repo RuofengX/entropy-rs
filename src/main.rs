@@ -1,5 +1,4 @@
 #![allow(unused)]
-pub mod config;
 pub mod system;
 pub mod basic;
 pub mod world;
