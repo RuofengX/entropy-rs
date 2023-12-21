@@ -2,7 +2,6 @@ use std::marker::PhantomData;
 
 use retable::method::{MergeFn, TickFn};
 
-use crate::wheel::{Prime, Wheel};
 
 pub struct System<V> {
     init: Box<dyn Prime>,
