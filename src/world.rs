@@ -1,4 +1,7 @@
-use std::sync::OnceLock;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, OnceLock,
+};
 
 use config::Config;
 use rayon::prelude::*;
@@ -20,6 +23,10 @@ pub fn start(config: &Config) {
         .cache_capacity(cache_size);
 
     let mut db = config.open().unwrap();
+
+    // soft interupt
+    let interupt: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
+    signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&interupt)).unwrap();
 
     // 0x01 Load system meta, from mod system.
     LOADERS.get_or_init(|| load_system![_00_nothing, _01_clock]);
@@ -48,7 +55,13 @@ pub fn start(config: &Config) {
     });
 
     // 0x04 Start tick loop
+
     loop {
+        if interupt.load(Ordering::Relaxed) {
+            println!("Soft close.");
+            db.flush().unwrap();
+            break;
+        }
         RUNTIME_SYSTEM
             .get()
             .unwrap()
@@ -58,7 +71,7 @@ pub fn start(config: &Config) {
                     let (eid, v) = x.unwrap();
                     let delta = (LOADERS.get().unwrap().get(name).unwrap().tick)(eid, v, prop);
                     if let Some(delta) = delta {
-                        prop.merge(&eid, &delta).unwrap();
+                        prop.merge(&eid, &delta).expect("Unregister merge method.");
                     } else {
                         prop.remove(&eid).unwrap();
                     }

@@ -13,9 +13,9 @@ fn main() {
     println!("Hello, world!");
     let builder: ConfigBuilder<DefaultState> = Config::builder();
     let config = builder
-        .set_default("entropy.db.path", "/tmp/entropy/db")
+        .set_default("entropy.db.path", "./db")
         .unwrap()
-        .set_default("entropy.db.temporary", true)
+        .set_default("entropy.db.temporary", false)
         .unwrap()
         .set_default("entropy.db.cache_size", 1_000_000_000)
         .unwrap()
