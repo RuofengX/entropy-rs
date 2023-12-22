@@ -1,6 +1,6 @@
 [package]
 name = "entropy-rs"
-version = "0.2.0"
+version = "0.2.0-alpha.1"
 edition = "2021"
 description = "Game in rust."
 license = "MIT"
