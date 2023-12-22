@@ -1,0 +1,43 @@
+use sled::Db;
+
+use crate::basic::{Value, EID};
+
+use super::{MergeFn, Prop, TickFn};
+
+pub(crate) fn name() -> &'static str {
+    "basic_system"
+}
+
+pub(crate) fn ignite(world: &mut Db) {
+    let a = world.open_tree(name()).unwrap();
+    a.insert(&EID(1), &Value::Int(1)).unwrap();
+}
+
+pub(crate) fn rolling(prop: &Prop) -> ! {
+    loop {
+        println!("{:?}", prop.get(&EID(1)))
+    }
+}
+
+pub(crate) static MERGE: dyn MergeFn = |_eid, old, delta: Value| {
+    if let Some(old) = old {
+        // Reflect value by enum
+        if let (Value::Int(old), Value::Int(delta)) = (old, delta.clone()) {
+            Some(Value::Int(old + delta))
+        } else {
+            // Error format in database, just use new.
+            Some(delta)
+        }
+    } else {
+        // No old data, just use new.
+        Some(delta)
+    }
+};
+
+pub(crate) static TICK: dyn TickFn = &|eid, old, prop| {
+    if let Value::Int(old) = old {
+        Some(Value::Int(old + 1))
+    } else {
+        None
+    }
+};

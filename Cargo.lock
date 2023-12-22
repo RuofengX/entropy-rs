@@ -83,6 +83,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "builder_macro"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3461683f95457fc41609a8e0c4ca557f4fbc8764a8f6a9670508b5537d9604c7"
+
+[[package]]
 name = "byteorder"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -266,9 +272,11 @@ version = "0.2.0"
 dependencies = [
  "bincode",
  "bincode-sled",
+ "builder_macro",
  "config",
  "enum_dispatch",
  "parking_lot 0.12.1",
+ "paste",
  "rayon",
  "rustc-hash",
  "serde",
@@ -541,6 +549,12 @@ dependencies = [
  "smallvec",
  "windows-targets",
 ]
+
+[[package]]
+name = "paste"
+version = "1.0.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c"
 
 [[package]]
 name = "pathdiff"
