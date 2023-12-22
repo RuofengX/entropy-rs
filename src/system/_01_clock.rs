@@ -2,7 +2,7 @@ use sled::Db;
 
 use crate::basic::{Value, EID};
 
-use super::{utils, Ignite, MergeFn, Prop, Rolling, TickFn};
+use super::{utils, Ignite, MergeFn, Prop, Rolling, TickFn, Systems};
 
 pub(crate) static NAME: &'static str = "clock";
 
@@ -10,8 +10,8 @@ pub(crate) static IGNITE: &'static (dyn Ignite + Send + Sync) = &|world: &mut Db
     let prop = utils::get_tree(world, NAME);
     prop.insert(&EID(1), &Value::Int(0)).unwrap();
 };
-pub(crate) static ROLLING: &'static (dyn Rolling + Send + Sync) = &|prop: &Prop| loop {
-    println!("{:?}", prop.get(&EID(1)));
+pub(crate) static ROLLING: &'static (dyn Rolling + Send + Sync) = &|systems: &Systems| loop {
+    println!("{:?}", systems.get(NAME).unwrap().get(&EID(1)));
 };
 pub(crate) static MERGE: &'static (dyn MergeFn + Send + Sync) =
     &|_eid: EID, old: Option<Value>, delta: Value| {

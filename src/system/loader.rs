@@ -5,11 +5,11 @@ use builder_macro::object_struct;
 use crate::system::{Ignite, MergeFn, Rolling, TickFn, _00_nothing, _01_clock};
 
 object_struct!(pub SystemBuilder -> SystemMeta{
-        name: &'static str,
-        ignite: &'static (dyn Ignite + Sync + Send),
-        rolling: &'static (dyn Rolling + Sync + Send),
-        merge: &'static (dyn MergeFn + Sync + Send),
-        tick: &'static (dyn TickFn + Sync + Send),
+        pub name: &'static str,
+        pub ignite: &'static (dyn Ignite + Sync + Send),
+        pub rolling: &'static (dyn Rolling + Sync + Send),
+        pub merge: &'static (dyn MergeFn + Sync + Send),
+        pub tick: &'static (dyn TickFn + Sync + Send),
     }
 );
 
@@ -37,8 +37,7 @@ macro_rules! load_system{
     };
 }
 
-type Loaders = OnceLock<Vec<SystemMeta>>;
-pub fn load() -> Loaders {
+pub fn system_load() -> super::Loaders {
     let rtn = OnceLock::new();
     rtn.get_or_init(|| {
         load_system![_00_nothing, _01_clock] // TODO: add system here.
