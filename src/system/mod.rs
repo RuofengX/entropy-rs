@@ -11,7 +11,7 @@ use std::sync::OnceLock;
 use crate::basic::{Value, EID};
 
 /// The meta data of system, which is defined at compile time.
-pub type Loaders = OnceLock<Vec<loader::SystemMeta>>;
+pub static LOADERS: OnceLock<FxHashMap<&'static str, loader::SystemMeta>> = OnceLock::new();
 
 /// The runtime system.
 pub type Systems = FxHashMap<&'static str, Prop>;

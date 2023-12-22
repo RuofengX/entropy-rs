@@ -1,54 +1,62 @@
-use std::{
-    collections::HashMap,
-    thread::{self, JoinHandle},
-};
+use std::sync::OnceLock;
 
+use config::Config;
 use rayon::prelude::*;
 use rustc_hash::FxHashMap;
-use sled::Db;
 
-use crate::system::{loader::system_load, utils, Loaders, Prop, TickFn};
+use crate::{
+    load_system,
+    system::{utils, Prop, Systems, _00_nothing, _01_clock, LOADERS},
+};
 
-pub struct World {
-    db: Db,                                // persistence data
-    system_meta: Loaders,                  // compile system_meta in once_cell
-    system: FxHashMap<&'static str, Prop>, // runtime system
-    wheels: JoinHandle<()>,
-    tickers: HashMap<&'static str, Box<dyn TickFn + Sync + Send>>,
-}
-impl World {
-    pub fn start(&'static mut self) {
-        // 0x00 Read all systems
-        self.system_meta = system_load();
-        let s = self.system_meta.get().unwrap();
+pub fn start(config: &Config) {
+    // 0x00 Read config, build World.
+    let path = config.get_string("entropy.db.path").unwrap();
+    let temporary = config.get_bool("entropy.db.temporary").unwrap();
+    let cache_size = config.get_int("entropy.db.cache_size").unwrap() as u64;
+    let config = sled::Config::new()
+        .path(path)
+        .temporary(temporary)
+        .cache_capacity(cache_size);
 
-        // 0x01 Load systems and run ignite & rolling
-        for system_meta in s {
-            (system_meta.ignite)(&mut self.db);
-            let prop = utils::get_tree(&self.db, system_meta.name);
-            prop.set_merge_operator(system_meta.merge);
-            self.tickers
-                .insert(system_meta.name, Box::new(system_meta.tick));
-            self.system.insert(system_meta.name, prop);
-        }
+    let mut db = config.open().unwrap();
 
-        // 0x02 Start all rolling wheels after ignite.
-        self.wheels = thread::spawn(|| {
-            self.system_meta
-                .get()
-                .unwrap()
-                .into_par_iter()
-                .for_each(|x| {
-                    (x.rolling)(&self.system);
-                })
-        });
+    // 0x01 Load system meta, from mod system.
+    LOADERS.get_or_init(|| load_system![_00_nothing, _01_clock]);
 
-        // 0x03 Start tick loop
-        loop {
-            self.system.par_iter().for_each(|(&name, prop)| {
+    // 0x02 Load runtime systems and run ignite & rolling
+    static RUNTIME_SYSTEM: OnceLock<Systems> = OnceLock::new();
+
+    let mut system = FxHashMap::<&'static str, Prop>::default();
+    for (&name, meta) in LOADERS.get().unwrap() {
+        (meta.ignite)(&mut db);
+        let prop = utils::get_tree(&db, name);
+        prop.set_merge_operator(meta.merge);
+        system.insert(name, prop);
+    }
+    RUNTIME_SYSTEM.get_or_init(|| system);
+
+    // 0x03 Start all rolling wheels after ignite.
+    let _wheels = std::thread::spawn(|| {
+        LOADERS
+            .get()
+            .unwrap()
+            .into_par_iter()
+            .for_each(|(_, meta)| {
+                (meta.rolling)(&RUNTIME_SYSTEM.get().unwrap());
+            })
+    });
+
+    // 0x04 Start tick loop
+    loop {
+        RUNTIME_SYSTEM
+            .get()
+            .unwrap()
+            .par_iter()
+            .for_each(|(&name, prop)| {
                 prop.iter().par_bridge().for_each(|x| {
                     let (eid, v) = x.unwrap();
-                    let delta = (self.tickers.get(name).unwrap())(eid, v, prop);
+                    let delta = (LOADERS.get().unwrap().get(name).unwrap().tick)(eid, v, prop);
                     if let Some(delta) = delta {
                         prop.merge(&eid, &delta).unwrap();
                     } else {
@@ -56,6 +64,5 @@ impl World {
                     }
                 })
             });
-        }
     }
 }

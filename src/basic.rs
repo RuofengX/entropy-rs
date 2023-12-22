@@ -30,7 +30,7 @@ pub enum Value {
     UInt3([u64; 3]),
     Float3([f64; 3]),
 
-    // foreign 
+    // foreign
     Time(Duration),
     EID(EID),
 
@@ -39,7 +39,7 @@ pub enum Value {
     Bytes(Vec<u8>),
     List(Vec<Value>),
     Record(HashMap<EID, Value>),
-    
+
     // Special
-    Velocity(([f64;3], [u64;3])), // for velocity system
+    Velocity(([f64; 3], [u64; 3])), // for velocity system
 }

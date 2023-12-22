@@ -2,7 +2,7 @@ use sled::Db;
 
 use crate::basic::Value;
 
-use super::{Ignite, MergeFn, Rolling, TickFn, Systems};
+use super::{Ignite, MergeFn, Rolling, Systems, TickFn};
 
 pub(crate) static NAME: &'static str = "nothing";
 

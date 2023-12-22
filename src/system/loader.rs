@@ -1,8 +1,6 @@
-use std::sync::OnceLock;
-
 use builder_macro::object_struct;
 
-use crate::system::{Ignite, MergeFn, Rolling, TickFn, _00_nothing, _01_clock};
+use crate::system::{Ignite, MergeFn, Rolling, TickFn};
 
 object_struct!(pub SystemBuilder -> SystemMeta{
         pub name: &'static str,
@@ -18,11 +16,12 @@ macro_rules! load_system{
     () => {Vec::<SystemBuilder>::new()};
     ( $( $p:ident),* ) => {
         {
-            let mut loader: Vec<SystemMeta> = Vec::new();
+            let mut loader: FxHashMap<&'static str, crate::system::loader::SystemMeta> = FxHashMap::default();
 
             $(
-                loader.push(
-                    SystemBuilder::new(
+                loader.insert(
+                    $p::NAME,
+                    crate::system::loader::SystemBuilder::new(
                         $p::NAME,
                         $p::IGNITE,
                         $p::ROLLING,
@@ -35,12 +34,4 @@ macro_rules! load_system{
         }
 
     };
-}
-
-pub fn system_load() -> super::Loaders {
-    let rtn = OnceLock::new();
-    rtn.get_or_init(|| {
-        load_system![_00_nothing, _01_clock] // TODO: add system here.
-    });
-    rtn
 }
