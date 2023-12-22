@@ -1,14 +1,10 @@
-use bincode_sled::Tree;
+use std::sync::OnceLock;
+
 use builder_macro::object_struct;
-use paste::paste;
-use sled::Db;
 
-use crate::{
-    basic::{Value, EID},
-    system::{self, Ignite, MergeFn, Rolling, TickFn},
-};
+use crate::system::{Ignite, MergeFn, Rolling, TickFn, _00_nothing, _01_clock};
 
-object_struct!(SystemBuilder -> SystemMeta{
+object_struct!(pub SystemBuilder -> SystemMeta{
         name: &'static str,
         ignite: &'static (dyn Ignite + Sync + Send),
         rolling: &'static (dyn Rolling + Sync + Send),
@@ -17,9 +13,7 @@ object_struct!(SystemBuilder -> SystemMeta{
     }
 );
 
-pub(crate) type Loaders = Vec<SystemMeta>;
-pub(crate) static LOADERS: Loaders = Loaders::new();
-
+#[macro_export]
 macro_rules! load_system{
     () => {Vec::<SystemBuilder>::new()};
     ( $( $p:ident),* ) => {
@@ -36,12 +30,18 @@ macro_rules! load_system{
                         $p::TICK,
                     ).build()
                 );
-            )*;
+            )*
             loader
         }
 
     };
 }
 
-use system::_00_nothing;
-static LOADER: Vec<SystemMeta> = load_system![_00_nothing];
+type Loaders = OnceLock<Vec<SystemMeta>>;
+pub fn load() -> Loaders {
+    let rtn = OnceLock::new();
+    rtn.get_or_init(|| {
+        load_system![_00_nothing, _01_clock] // TODO: add system here.
+    });
+    rtn
+}
