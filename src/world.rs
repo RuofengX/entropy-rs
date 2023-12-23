@@ -4,6 +4,7 @@ use std::sync::{
 };
 
 use config::Config;
+use sensible_dbg::dbg;
 use rayon::prelude::*;
 use rustc_hash::FxHashMap;
 
@@ -70,7 +71,6 @@ pub fn start(config: &Config) {
             break;
         }
         dbg!("interupt pass");
-        // TODO: add rayon context here.
         RUNTIME_SYSTEM
             .get()
             .unwrap()
@@ -78,7 +78,8 @@ pub fn start(config: &Config) {
             .panic_fuse()
             .for_each(|(&name, prop)| {
                 dbg!(name);
-                prop.iter().par_bridge().panic_fuse().for_each(|x| {
+                // TODO: Use light thread pool here.
+                prop.iter().for_each(|x| {
                     let (eid, v) = x.unwrap();
                     dbg!(eid);
                     dbg!(v.clone());
