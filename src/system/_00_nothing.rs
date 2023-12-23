@@ -10,4 +10,4 @@ pub(crate) static IGNITE: &'static (dyn Ignite + Send + Sync) = &|_world: &mut D
 pub(crate) static ROLLING: &'static (dyn Rolling + Send + Sync) = &|_systems: &Systems| loop {};
 pub(crate) static MERGE: &'static (dyn MergeFn + Send + Sync) =
     &|_eid, old: Option<Value>, _delta: Value| old;
-pub(crate) static TICK: &'static (dyn TickFn + Send + Sync) = &|_eid, old, _prop| Some(old);
+pub(crate) static TICK: &'static (dyn TickFn + Send + Sync) = &|_eid, _old, _prop| None;

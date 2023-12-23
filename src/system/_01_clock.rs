@@ -33,10 +33,7 @@ pub(crate) static MERGE: &'static (dyn MergeFn + Send + Sync) =
         }
     };
 pub(crate) static TICK: &'static (dyn TickFn + Send + Sync) =
-    &|_eid: EID, old: Value, prop: &Prop| {
-        for i in prop.iter(){
-            dbg!(i.unwrap());
-        }
+    &|_eid: EID, old: Value, _prop: &Prop| {
         if let Value::Int(_) = old {
             Some(Value::Int(1))
         } else {

@@ -20,6 +20,9 @@ pub fn start(config: &Config) {
     let config = sled::Config::new()
         .path(path)
         .temporary(temporary)
+        .mode(sled::Mode::HighThroughput)
+        .use_compression(false)
+        .print_profile_on_drop(true)
         .cache_capacity(cache_size);
 
     let mut db = config.open().unwrap();
@@ -49,6 +52,7 @@ pub fn start(config: &Config) {
             .get()
             .unwrap()
             .into_par_iter()
+            .panic_fuse()
             .for_each(|(_, meta)| {
                 (meta.rolling)(&RUNTIME_SYSTEM.get().unwrap());
             })
@@ -57,25 +61,37 @@ pub fn start(config: &Config) {
     // 0x04 Start tick loop
 
     loop {
+        dbg!("loop start");
+        dbg!("interupt check");
         if interupt.load(Ordering::Relaxed) {
+            dbg!("interupt!");
             println!("Soft close.");
             db.flush().unwrap();
             break;
         }
+        dbg!("interupt pass");
+        // TODO: add rayon context here.
         RUNTIME_SYSTEM
             .get()
             .unwrap()
             .par_iter()
+            .panic_fuse()
             .for_each(|(&name, prop)| {
-                prop.iter().par_bridge().for_each(|x| {
+                dbg!(name);
+                prop.iter().par_bridge().panic_fuse().for_each(|x| {
                     let (eid, v) = x.unwrap();
+                    dbg!(eid);
+                    dbg!(v.clone());
                     let delta = (LOADERS.get().unwrap().get(name).unwrap().tick)(eid, v, prop);
                     if let Some(delta) = delta {
+                        dbg!("merge");
                         prop.merge(&eid, &delta).expect("Unregister merge method.");
                     } else {
-                        prop.remove(&eid).unwrap();
+                        dbg!("nothing change");
                     }
-                })
+                    dbg!("op_done");
+                });
             });
+        dbg!("loop end");
     }
 }

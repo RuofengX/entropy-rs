@@ -3,7 +3,7 @@ description = "Game in rust."
 edition = "2021"
 license = "MIT"
 name = "entropy-rs"
-version = "0.2.0-alpha.1"
+version = "0.2.0-alpha.2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
