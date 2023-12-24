@@ -1,4 +1,4 @@
-use std::{collections::HashMap, time::Duration};
+use std::time::Duration;
 
 use bincode::{Decode, Encode};
 
@@ -41,5 +41,5 @@ pub enum Value {
     // Special
     EntityCreate(EID), // for entity create.
     EntityCreateOnProp((EID, String)), // for entity create.
-    // VelocityMessage(([f64; 3], [u64; 3])), // for velocity system.
+                       // VelocityMessage(([f64; 3], [u64; 3])), // for velocity system.
 }
