@@ -20,12 +20,10 @@ pub enum Value {
     Float(f64),
 
     // fixed-size primitive
-    Boolean2([bool; 2]),
     Int2([i64; 2]),
     UInt2([u64; 2]),
     Float2([f64; 2]),
 
-    Boolean3([bool; 3]),
     Int3([i64; 3]),
     UInt3([u64; 3]),
     Float3([f64; 3]),
@@ -35,10 +33,10 @@ pub enum Value {
     EID(EID),
 
     // On Stack
-    String(String),
-    Bytes(Vec<u8>),
-    List(Vec<Value>),
-    Record(HashMap<EID, Value>),
+    // String(String),
+    // Bytes(Vec<u8>),
+    // List(Vec<Value>),
+    // Record(HashMap<EID, Value>),
 
     // Special
     EntityCreate(EID), // for entity create.
