@@ -49,16 +49,19 @@ pub fn start(config: &Config) {
 
     // 0x03 Start all rolling wheels after ignite.
     let _wheels = std::thread::spawn(|| {
+        dbg!("start wheels.");
         LOADERS
             .get()
             .unwrap()
-            .into_par_iter()
-            .panic_fuse()
-            .for_each(|(_, meta)| {
-                (meta.rolling)(&RUNTIME_SYSTEM.get().unwrap());
+            // use thread pool here
+            .iter()
+            .for_each(|(&name, meta)| {
+                dbg!(format!("start {0} rolling", name));
+                std::thread::spawn(|| {
+                    (meta.rolling)(&RUNTIME_SYSTEM.get().unwrap());
+                });
             })
     });
-
     // 0x04 Start tick loop
 
     loop {

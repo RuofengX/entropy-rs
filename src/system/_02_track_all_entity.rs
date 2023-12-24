@@ -35,3 +35,4 @@ pub(crate) static ROLLING: &'static (dyn Rolling + Send + Sync) = &|_systems: &S
 pub(crate) static MERGE: &'static (dyn MergeFn + Send + Sync) =
     &|_eid, old: Option<Value>, _delta: Value| old;
 pub(crate) static TICK: &'static (dyn TickFn + Send + Sync) = &|_eid, _old, _prop| None;
+

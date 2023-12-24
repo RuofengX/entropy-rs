@@ -16,7 +16,7 @@ pub(crate) fn set_entity(world: &Db, prop: &'static str, eid: EID, value: Value)
 
 pub(crate) fn set_entity_if_no_exists(world: &Db, prop: &'static str, eid: EID, value: Value) {
     let prop = get_prop(world, prop);
-    if prop.contains_key(&eid).unwrap() {
+    if !prop.contains_key(&eid).unwrap() {
         prop.insert(&eid, &value).unwrap();
     }
 }

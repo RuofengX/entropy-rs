@@ -1,10 +1,15 @@
-use std::{thread::sleep, time::Duration};
+use std::{
+    thread::sleep,
+    time::{self, Duration},
+};
 
 use sled::Db;
 
 use crate::basic::{Value, EID};
 
-use super::{utils::set_entity_if_no_exists, Ignite, MergeFn, Prop, Rolling, Systems, TickFn};
+use super::{
+    merger, ticker, utils::set_entity_if_no_exists, Ignite, MergeFn, Rolling, Systems, TickFn,
+};
 
 pub(crate) static NAME: &'static str = "clock";
 
@@ -12,33 +17,39 @@ pub(crate) static IGNITE: &'static (dyn Ignite + Send + Sync) = &|world: &mut Db
     set_entity_if_no_exists(world, NAME, EID(1), Value::UInt(1));
 };
 
-pub(crate) static ROLLING: &'static (dyn Rolling + Send + Sync) = &|systems: &Systems| loop {
-    let count_prop = systems.get(NAME).unwrap();
-    {
-        if let Ok(Some(Value::UInt(count))) = count_prop.get(&EID(1)) {
+pub(crate) static ROLLING: &'static (dyn Rolling + Send + Sync) = &|systems: &Systems| {
+    static ONE_SECOND: Duration = Duration::from_secs(1);
+    let mut mspt: f32;
+    let mut tps: f32;
+    let mut last_tick: u64 = 0;
+    loop {
+        let start_time = time::Instant::now(); // 记录开始时间
+
+        let count_prop = systems.get(NAME).unwrap();
+        let count = count_prop.get(&EID(1)).unwrap().unwrap();
+
+        if let Value::UInt(count) = count {
+            mspt = (ONE_SECOND.as_millis() as f32) / (count as f32) ;
+            tps = (count - last_tick) as f32 / ONE_SECOND.as_secs() as f32;
+            last_tick = count;
             println!("距离启动已过去{}个tick", count);
+            println!("TPS: {}, MSPT: {}", tps, mspt);
+        } else {
+            panic!("count is not a uint");
+        }
+
+        let elapsed = start_time.elapsed(); // 调用结束时间
+
+        if elapsed <= ONE_SECOND {
+            // no lagging
+            sleep(ONE_SECOND - elapsed);
+        } else {
+            // ! lagging
+            println!("lagging by {}ms (over one second)", elapsed.as_millis());
         }
     }
-    sleep(Duration::from_secs(1))
 };
 
-pub(crate) static MERGE: &'static (dyn MergeFn + Send + Sync) =
-    &|_eid: EID, old: Option<Value>, delta: Value| {
-        if let Some(old) = old {
-            if let (Value::Int(old), Value::Int(delta)) = (old, delta) {
-                Some(Value::Int(old + delta))
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    };
-pub(crate) static TICK: &'static (dyn TickFn + Send + Sync) =
-    &|_eid: EID, old: Value, _prop: &Prop| {
-        if let Value::Int(_) = old {
-            Some(Value::Int(1))
-        } else {
-            None
-        }
-    };
+pub(crate) static MERGE: &'static (dyn MergeFn + Send + Sync) = &merger::int_add;
+
+pub(crate) static TICK: &'static (dyn TickFn + Send + Sync) = &ticker::int::add_one;
