@@ -41,7 +41,7 @@ pub fn start(config: &Config) {
     let mut system = FxHashMap::<&'static str, Prop>::default();
     for (&name, meta) in LOADERS.get().unwrap() {
         (meta.ignite)(&mut db);
-        let prop = utils::get_tree(&db, name);
+        let prop = utils::get_prop(&db, name);
         prop.set_merge_operator(meta.merge);
         system.insert(name, prop);
     }

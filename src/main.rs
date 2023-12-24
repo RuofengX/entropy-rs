@@ -8,6 +8,7 @@ extern crate builder_macro;
 pub mod basic;
 pub mod system;
 pub mod world;
+pub mod msg;
 
 fn main() {
     println!("Hello, world!");

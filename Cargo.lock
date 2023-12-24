@@ -48,9 +48,8 @@ dependencies = [
 
 [[package]]
 name = "bincode-sled"
-version = "0.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cbceaa450dd5b8b987a65d7e286dc6faee906181146aaf028730a9cf973b54e7"
+version = "0.0.3"
+source = "git+https://github.com/RuofengX/bincode-sled.git#fee1d9e29be43cf96474548ecbd24579a6162975"
 dependencies = [
  "bincode",
  "pin-project",

@@ -41,5 +41,7 @@ pub enum Value {
     Record(HashMap<EID, Value>),
 
     // Special
-    Velocity(([f64; 3], [u64; 3])), // for velocity system
+    EntityCreate(EID), // for entity create.
+    EntityCreateOnProp((EID, String)), // for entity create.
+    // VelocityMessage(([f64; 3], [u64; 3])), // for velocity system.
 }

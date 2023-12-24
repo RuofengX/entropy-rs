@@ -4,10 +4,12 @@ pub(super) mod _02_track_all_entity;
 pub mod loader;
 pub(crate) mod utils;
 
+use bincode::{BorrowDecode, Encode};
 use bincode_sled::Tree;
 use rustc_hash::FxHashMap;
 use sled::Db;
-use std::sync::OnceLock;
+use std::{fmt::Debug, sync::OnceLock};
+use thiserror::Error;
 
 use crate::basic::{Value, EID};
 
@@ -41,3 +43,27 @@ impl<T> MergeFn for T where T: Fn(EID, Option<Value>, Value) -> Option<Value> + 
 /// Function how a entity change during every tick.
 pub trait TickFn: Fn(EID, Value, &Prop) -> Option<Value> {}
 impl<T> TickFn for T where T: Fn(EID, Value, &Prop) -> Option<Value> {}
+
+/// The struct that container multiple value, used in message queue.
+pub trait Message<'a>: Debug + Encode + BorrowDecode<'a> {
+    fn endpoint(&self) -> &'static str;
+    fn sender(&self) -> EID;
+    fn data(&self) -> &Value;
+}
+
+/// Errors when handleing with system.
+#[derive(Error, Debug)]
+pub enum SystemError {
+    #[error("System {0} not found")]
+    NotFound(String),
+    #[error("System {0} already exists")]
+    AlreadyExists(String),
+    #[error("System {0} not implemented")]
+    NotImplemented(String),
+    #[error("Message encodeerror")]
+    MessageEncodeError(#[from] bincode::error::EncodeError),
+    #[error("Message decode error")]
+    MessageDecodeError(#[from] bincode::error::DecodeError),
+    #[error("Value type error. Expect {0}, found {1}")]
+    ValueTypeError(String, String),
+}
