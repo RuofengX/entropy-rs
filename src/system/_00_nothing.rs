@@ -55,8 +55,8 @@ pub(crate) static MERGE: &'static (dyn MergeFn + Send + Sync) =
 /// * `&Prop`: A reference to the prop of this entity. See more in [`crate::system::Prop`]
 ///
 /// # Return
-/// * `Option::Some<Value>`:  If some => the delta value of this entity.
-/// * `Option::<Value>::None`: If none => the entity will not get changed.
+/// * `Option<Value>`:  If some => the delta value of this entity, 
+///   If none => the entity will not get changed.
 ///
 #[allow(unused_variables)]
 pub(crate) static TICK: &'static (dyn TickFn + Send + Sync) = &|eid, old, prop| None;
