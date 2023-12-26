@@ -10,7 +10,7 @@ use sensible_dbg::dbg;
 
 use crate::{
     load_system,
-    system::{utils, Prop, Systems, _00_nothing, _01_clock, _02_track_all_entity, LOADERS},
+    system::{utils, Prop, Systems, _00_nothing, _01_clock, _02_track_all_entity, LOADERS, _10_benchmark},
 };
 
 pub fn start(config: &Config) {
@@ -33,7 +33,8 @@ pub fn start(config: &Config) {
     signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&interupt)).unwrap();
 
     // 0x01 Load system meta, from mod system.
-    LOADERS.get_or_init(|| load_system![_00_nothing, _01_clock, _02_track_all_entity]);
+    LOADERS
+        .get_or_init(|| load_system![_00_nothing, _01_clock, _02_track_all_entity, _10_benchmark]);
 
     // 0x02 Load runtime systems and run ignite & rolling
     static RUNTIME_SYSTEM: OnceLock<Systems> = OnceLock::new();

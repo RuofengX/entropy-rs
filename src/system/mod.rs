@@ -1,6 +1,7 @@
 pub(super) mod _00_nothing;
 pub(super) mod _01_clock;
 pub(super) mod _02_track_all_entity;
+pub(super) mod _10_benchmark;
 pub(crate) mod loader;
 mod merger;
 mod ticker;
