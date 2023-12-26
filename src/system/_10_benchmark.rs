@@ -12,7 +12,7 @@ use super::{
 pub(crate) static NAME: &'static str = "benchmark";
 
 pub(crate) static IGNITE: &'static (dyn Ignite + Send + Sync) = &|world: &mut Db| {
-    (0..100000).into_iter().for_each(|x| {
+    (0..1000).into_iter().for_each(|x| {
         set_entity_if_no_exists(world, NAME, EID(x), Value::UInt(1));
     });
 };
@@ -25,12 +25,8 @@ pub(crate) static ROLLING: &'static (dyn Rolling + Send + Sync) = &|systems: &Sy
     }
 };
 pub(crate) static MERGE: &'static (dyn MergeFn + Send + Sync) = &int_add;
+
 pub(crate) static TICK: &'static (dyn TickFn + Send + Sync) =
-    &|eid: EID, _old: Value, prop: &Prop| {
-        let delta = prop.get(&EID(eid.0 + 1)).unwrap();
-        if delta.is_some() {
-            delta
-        } else {
-            Some(Value::UInt(0))
-        }
+    &|_eid: EID, _old: Value, _prop: &Prop| {
+        Some(Value::UInt(1))
     };

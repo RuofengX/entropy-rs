@@ -1,3 +1,6 @@
+#[global_allocator]
+static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+
 use config::{builder::DefaultState, Config, ConfigBuilder};
 
 use crate::world::start;
@@ -6,9 +9,9 @@ use crate::world::start;
 extern crate builder_macro;
 
 pub mod basic;
+pub mod msg;
 pub mod system;
 pub mod world;
-pub mod msg;
 
 fn main() {
     println!("Hello, world!");

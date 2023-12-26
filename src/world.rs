@@ -4,13 +4,17 @@ use std::sync::{
 };
 
 use config::Config;
-use rayon::prelude::*;
+use rayon::ThreadPoolBuilder;
 use rustc_hash::FxHashMap;
 use sensible_dbg::dbg;
 
 use crate::{
+    basic::{Value, EID},
     load_system,
-    system::{utils, Prop, Systems, _00_nothing, _01_clock, _02_track_all_entity, LOADERS, _10_benchmark},
+    system::{
+        utils, Prop, Systems, TickFn, _00_nothing, _01_clock, _02_track_all_entity, _10_benchmark,
+        LOADERS,
+    },
 };
 
 pub fn start(config: &Config) {
@@ -32,11 +36,11 @@ pub fn start(config: &Config) {
     let interupt: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&interupt)).unwrap();
 
-    // 0x01 Load system meta, from mod system.
+    // 0x010 Load system meta, from mod system.
     LOADERS
         .get_or_init(|| load_system![_00_nothing, _01_clock, _02_track_all_entity, _10_benchmark]);
 
-    // 0x02 Load runtime systems and run ignite & rolling
+    // 0x020 Load runtime systems and run ignite & rolling
     static RUNTIME_SYSTEM: OnceLock<Systems> = OnceLock::new();
 
     let mut system = FxHashMap::<&'static str, Prop>::default();
@@ -48,7 +52,7 @@ pub fn start(config: &Config) {
     }
     RUNTIME_SYSTEM.get_or_init(|| system);
 
-    // 0x03 Start all rolling wheels after ignite.
+    // 0x030 Start all rolling wheels after ignite.
     let _wheels = std::thread::spawn(|| {
         dbg!("start wheels.");
         LOADERS
@@ -63,40 +67,51 @@ pub fn start(config: &Config) {
                 });
             })
     });
-    // 0x04 Start tick loop
 
+    // 0x040 Start tick loop
+    // 0x041 Create thread pool.
+    let executor = ThreadPoolBuilder::new()
+        .num_threads(0)
+        .stack_size(32 * 1024 * 1024)
+        .build()
+        .unwrap();
+
+    static TICK_ALL: fn(&dyn TickFn, EID, Value, &Prop) = |tick, eid, old, prop| {
+        let delta = tick(eid, old, prop);
+        if let Some(delta) = delta {
+            prop.merge(&eid, &delta).expect("Unregister merge method.");
+        }
+    };
+
+    let systems = RUNTIME_SYSTEM.get().unwrap();
     loop {
-        dbg!("loop start");
-        dbg!("interupt check");
+        // interupt check
         if interupt.load(Ordering::Relaxed) {
-            dbg!("interupt!");
-            println!("Soft close.");
+            println!("Soft closing...");
             db.flush().unwrap();
+            println!("Closed!");
             break;
         }
-        dbg!("interupt pass");
-        RUNTIME_SYSTEM
-            .get()
-            .unwrap()
-            .par_iter()
-            .panic_fuse()
-            .for_each(|(&name, prop)| {
-                dbg!(name);
-                // TODO: Use light thread pool here.
-                prop.iter().for_each(|x| {
-                    let (eid, v) = x.unwrap();
-                    dbg!(eid);
-                    dbg!(v.clone());
-                    let delta = (LOADERS.get().unwrap().get(name).unwrap().tick)(eid, v, prop);
-                    if let Some(delta) = delta {
-                        dbg!("merge");
-                        prop.merge(&eid, &delta).expect("Unregister merge method.");
-                    } else {
-                        dbg!("nothing change");
+
+        // start tick all
+
+        // create scope, to enable the full-concurrency
+        executor.scope(|s| {
+            // iter all props
+            systems.iter().for_each(|(&name, prop)| {
+                // get tick method pointer
+                let tick_method = LOADERS.get().unwrap().get(name).unwrap().tick;
+                // start iter entity in concurrent pool
+                s.spawn(move |s| {
+                    for x in prop.iter() {
+                        let (eid, v) = x.unwrap();
+                        // start tick process in concurrent pool
+                        s.spawn(move |_s| {
+                            TICK_ALL(tick_method, eid, v, prop);
+                        });
                     }
-                    dbg!("op_done");
                 });
             });
-        dbg!("loop end");
+        });
     }
 }

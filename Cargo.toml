@@ -13,6 +13,7 @@ bincode = {version = "2.0.0-rc.3", features = ["alloc"]}
 bincode-sled = { git = "https://github.com/RuofengX/bincode-sled.git", version = "0.0.3" }
 builder_macro = "0.5.1"
 config = "0.13.4"
+jemallocator = "0.5.4"
 parking_lot = "0.12.1"
 rayon = "1.8.0"
 rustc-hash = "1.1.0"
@@ -21,3 +22,7 @@ signal-hook = "0.3.17"
 sled = "0.34.7"
 thiserror = "1.0.50"
 zmq = "0.10.0"
+
+# [profile.release]
+# codegen-units = 1
+# lto = "fat"
