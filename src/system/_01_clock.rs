@@ -20,7 +20,6 @@ pub(crate) static IGNITE: &'static (dyn Ignite + Send + Sync) = &|world: &mut Db
 pub(crate) static ROLLING: &'static (dyn Rolling + Send + Sync) = &|systems: &Systems| {
     static ONE_SECOND: Duration = Duration::from_secs(1);
     let mut mspt: f32;
-    let mut tps: f32;
     let mut last_tick: u64 = 0;
     loop {
         let start_time = time::Instant::now(); // 记录开始时间
@@ -29,11 +28,15 @@ pub(crate) static ROLLING: &'static (dyn Rolling + Send + Sync) = &|systems: &Sy
         let count = count_prop.get(&EID(1)).unwrap().unwrap();
 
         if let Value::UInt(count) = count {
-            mspt = (ONE_SECOND.as_millis() as f32) / (count as f32) ;
-            tps = (count - last_tick) as f32 / ONE_SECOND.as_secs() as f32;
-            last_tick = count;
             println!("距离启动已过去{}个tick", count);
-            println!("TPS: {}, MSPT: {}", tps, mspt);
+            let delta = count - last_tick;
+            if delta != 0 {
+                mspt = (ONE_SECOND.as_millis() as f32) / ((count - last_tick) as f32);
+                println!("MSPT: {}", mspt);
+            } else {
+                println!("MSPT: >1000");
+            }
+            last_tick = count;
         } else {
             panic!("count is not a uint");
         }
